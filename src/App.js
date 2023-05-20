@@ -1,47 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 import Tasks from './components/Tasks/Tasks';
 import NewTask from './components/NewTask/NewTask';
+import useHttp from './hooks/use-http';
 
 function App() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [tasks, setTasks] = useState([]);
 
-  const fetchTasks = async (taskText) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        'https://react-http-6b4a6.firebaseio.com/tasks.json'
-      );
+  const transformTasks = (tasksObj) => {
+     const loadedTasks = [];
 
-      if (!response.ok) {
-        throw new Error('Request failed!');
-      }
+     for (const taskKey in tasksObj) {
+      loadedTasks.push({ id: taskKey, text: tasksObj[taskKey].text });
+     }
 
-      const data = await response.json();
-
-      const loadedTasks = [];
-
-      for (const taskKey in data) {
-        loadedTasks.push({ id: taskKey, text: data[taskKey].text });
-      }
-
-      setTasks(loadedTasks);
-    } catch (err) {
-      setError(err.message || 'Something went wrong!');
-    }
-    setIsLoading(false);
+     setTasks(loadedTasks);
   };
 
+  // Pulling out all of the things returned within the object httpData
+  const {isLoading, error, sendRequest: fetchTasks } = useHttp();
+
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    fetchTasks(
+      // We have the option to pass headers or a body to useHttp but we're just sending a
+      // GET request here so we don't need them.
+      { url: 'https://test-project-2-1a6c2-default-rtdb.firebaseio.com/tasks.json' },
+      // This function will be called by the custom hook whenever we get a response
+      transformTasks
+    );
+  }, [fetchTasks]);
 
   const taskAddHandler = (task) => {
     setTasks((prevTasks) => prevTasks.concat(task));
   };
+
 
   return (
     <React.Fragment>
